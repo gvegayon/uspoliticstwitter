@@ -112,27 +112,36 @@ rm(list=ls())
 load("data/tweets_house.rdata")
 load("data/representatives_info.rdata")
 
-groups <- data.frame(group=representatives$Party, name=representatives_profile$tw_screen_name,
-                     stringsAsFactors = TRUE)
+tweets_house<-dplyr::bind_rows(tweets_house[-467])
 
-tweets_house<-bind_rows(tweets_house[-467])
+groups <- data.frame(
+  group = representatives$Party, 
+  name  = representatives_profile$tw_screen_name,
+  date  = representatives_profile$tw_created_at,
+  nfoll = representatives_profile$tw_followers_count,
+  nmsgs = representatives_profile$tw_statuses_count,
+  stringsAsFactors = TRUE)
 
-# Filtering
-house_elect_2014 <- filter(
+# Filtering to the period of the elections
+house_elect_2014 <- dplyr::filter(
   tweets_house, created_at >= ran[1] & created_at <= ran[2])
 
-elements <- tw_extract(tweets_house$text, "mention")
-house_net <- tw_network(tweets_house$screen_name, elements$mention, 
+# Extracting mentions
+elements <- twitterreport::tw_extract(tweets_house$text, "mention")
+house_net <- twitterreport::tw_network(tweets_house$screen_name, elements$mention, 
                          group = groups, only.from = TRUE)
+
+# Encoding to get whether a Democrat mentions either a Rep or Indep
 net <- house_net$links
 colnames(net)[1] <- "id"
-net <- left_join(net,house_net$nodes)
+net <- dplyr::left_join(net,house_net$nodes, by="id")
 colnames(net)[c(1,2,4,5)] <- c("source","id","source_name","source_group")
-net <- left_join(net,house_net$nodes)
+net <- dplyr::left_join(net,house_net$nodes)
 
 net$cross_ref <- with(net, as.numeric(source_group!=group))
 net$dem <- as.numeric(net$source_group == "D")
 net$rep <- as.numeric(net$source_group == "R")
-net$ind <- as.numeric(net$source_group == "I")
-summary(glm(cross_ref ~0+dem+rep+ind, data=net,family=binomial(link="probit")))
-summary(lm(cross_ref ~0+dem+rep+ind, data=net))
+
+# Linear probability model
+# summary(glm(cross_ref ~0+dem+rep, data=net,family=binomial(link="probit")))
+summary(lm(cross_ref ~0+dem+rep, data=net))

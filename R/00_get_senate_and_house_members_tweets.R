@@ -11,6 +11,8 @@ source("R/credentials.R")
 
 # Loading data
 load("data/senators_profile.rdata")
+write.csv(senators_profile,"data/senators_profile.csv")
+write.csv(representatives,"data/representatives.csv")
 load("data/congress_info.RData")
 
 ################################################################################
