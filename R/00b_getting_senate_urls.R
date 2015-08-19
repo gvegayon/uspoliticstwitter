@@ -52,12 +52,59 @@ for (i in 1:n) {
   if (!(i %% 10)) save.image("data/senate_info.rdata")
 }
 
-# Checking out who I couldn't find (twitter accounts unavailable at the website)
-accounts_werent_found_senate <- sapply(twitter_accounts_senate,length)==0
-senators$website[which(accounts_werent_found_senate)]
+# Modifying manually 
+tmp <- twitter_accounts_senate
+names(tmp) <- paste(1:length(tmp),senators$name)
 
-save.image("data/senate_info.RData")
-load("data/senate_info.RData")
+# Checking out multiple ones
+tmp[which(sapply(tmp, length) > 1)]
+
+
+# List of the first account ok
+ok <- c(1,34,35,57,66,87)
+tmp[ok] <- lapply(tmp[ok], "[[", 1)
+
+# Manually fixing accounts
+tmp[[43]] <- "senatorheitkamp"
+tmp[[61]] <- "senatemajldr"
+tmp[[61]] <- "senatorwicker"
+
+################################################################################
+# Checking out empty ones (we'll use the API to search for them)
+pending_index <- which(sapply(tmp, length) == 0)
+pending_names <- gsub("^[0-9]+\\s+","",names(tmp[pending_index]))
+
+pending <- vector("list",length(pending_names))
+
+source("R/credentials.R")
+for (i in 1:length(pending)) {
+  x <- tw_api_get_users_search(pending_names[i],key)[,c("name","screen_name","verified","followers_count")]
+  if (!is.null(x)) tmp[[pending_index[i]]] <- x
+}
+
+# The ones that I'm not sure about
+lapply(tmp[pending_index], head, 1)[15:19]
+
+notok <- c(24,30,38,76,83)
+ok <- pending_index[which(!(pending_index %in% notok))]
+
+tmp[ok] <- lapply(tmp[ok],function(x) {
+  if (length(x))x$screen_name[1]
+  else NULL
+})
+
+tmp[notok]
+
+tmp[[24]] <- "JohnCornyn"
+tmp[[30]] <- "SenatorDurbin"
+tmp[[38]] <- "SenGillibrand"
+tmp[[76]] <- "SenatorRisch"
+tmp[[83]] <- "SenSchumer"
+
+senators$screen_name <- unlist(tmp)
+senators$screen_name <- tolower(senators$screen_name)
+
+save(senators,file="data/senate_info.rdata")
 
 ################################################################################
 # Getting account info from API
