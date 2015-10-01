@@ -11,14 +11,14 @@ con <- dbConnect(RMySQL::MySQL(), dbname=sqlkey$dbname, username=sqlkey$usr,
                  host=sqlkey$host)
 
 # Getting the data and writing the right format
-tweets <- dbGetQuery(con, "SELECT * FROM tweets ORDER BY timestamp DESC LIMIT 10000")
+tweets <- dbGetQuery(con, "SELECT * FROM tweets ORDER BY tweet_id DESC LIMIT 250000")
 
 # created_at
 tweets$timestamp <- strptime(tweets$timestamp, "%a %b %d %T +0000 %Y")
 n <- 2000
 locations <- vector('list',n)
 for (i in 1:n) {
-  locations[[i]] <- tryCatch(geocode(tweets$location[i], ), error=function(e) e)
+  locations[[i]] <- tryCatch(geocode(tweets$location[i] ), error=function(e) e)
   if (!(i %% 20)) save.image('data/nailen_tweets.rdata')
   message(i,' out of ',n,' done.')
 }
@@ -29,6 +29,19 @@ for (i in 1:n) {
 # })
 
 save.image('data/nailen_tweets.rdata')
+
+# Subexample trying the methods
+x <- tw_extract(tweets$content)
+y <- jaccard_coef(x$hashtag,max.size = 250000)
+
+words_closeness('immigration',y)
+
+z <- words_closeness('trump',y)
+wordcloud::wordcloud(z$word[-1], z$coef[-1], random.color=TRUE, 
+                     colors=c("blue","red"))
+
+words_closeness('trump',y)
+words_closeness('iran',y)
 
 # Coordinates
 # test <- which(sapply(geo,is.null))
