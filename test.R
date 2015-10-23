@@ -11,7 +11,7 @@ con <- dbConnect(RMySQL::MySQL(), dbname=sqlkey$dbname, username=sqlkey$usr,
                  host=sqlkey$host)
 
 # Getting the data and writing the right format
-tweets <- dbGetQuery(con, "SELECT * FROM tweets ORDER BY tweet_id DESC LIMIT 250000")
+tweets <- dbGetQuery(con, "SELECT * FROM tweets ORDER BY tweet_id DESC LIMIT 25000")
 
 # created_at
 tweets$timestamp <- strptime(tweets$timestamp, "%a %b %d %T +0000 %Y")
